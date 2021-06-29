@@ -1,21 +1,31 @@
-import { StatusBar } from 'expo-status-bar';
+import 'react-native-gesture-handler';
+import 'react-native-get-random-values'
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import AppLoading from 'expo-app-loading';
+import { StatusBar } from 'expo-status-bar';
+import {
+  Inter_400Regular,
+  Inter_700Bold,
+  useFonts,
+} from '@expo-google-fonts/inter';
+
+import { AuthProvider } from './src/hooks/useAuth';
+import { Routes } from './src/routes';
 
 export default function App() {
+  const [fontsLoaded] = useFonts({
+    Inter_700Bold,
+    Inter_400Regular,
+    'Lexend-400Regular': require('./src/assets/fonts/Lexend-Regular.ttf'),
+    'Lexend-600SemiBold': require('./src/assets/fonts/Lexend-SemiBold.ttf'),
+  });
+
+  if (!fontsLoaded) return <AppLoading />;
+
   return (
-    <View style={styles.container}>
-      <Text>Open up App.tsx to start working on your app!</Text>
-      <StatusBar style="auto" />
-    </View>
+    <AuthProvider>
+      <StatusBar style="light" translucent />
+      <Routes />
+    </AuthProvider>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});

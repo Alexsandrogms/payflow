@@ -27,10 +27,15 @@ export const PriceText = styled.Text`
   color: ${theme.colors.primary};
 `;
 
-export const DueDateText = styled.Text`
+type DueDateTextProps = {
+  expired?: boolean;
+};
+
+export const DueDateText = styled.Text<DueDateTextProps>`
   font-family: ${theme.fonts.textRegular};
   font-size: 13px;
   line-height: 16px;
-  color: ${theme.colors.body};
+  color: ${(props) =>
+    props.expired ? theme.colors.delete : theme.colors.body};
   padding-top: 10px;
 `;

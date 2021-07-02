@@ -1,20 +1,45 @@
-import React, { useCallback, useState } from 'react';
-import { useFocusEffect } from '@react-navigation/native';
+import React, { useCallback, useEffect, useState } from 'react';
+import { useIsFocused } from '@react-navigation/native';
 import { FlatList, RefreshControl } from 'react-native';
 
 import { Header } from '../../components/Header';
 import { Divider } from '../../components/Divider';
 import { ListHeader } from '../../components/ListHeader';
 import { Ticket } from '../../components/Ticket';
-import { TicketType, useTicket } from '../../hooks/useTicket';
 
 import { Container, Content, TicketSeparator } from './styles';
+import { getBottomSpace } from 'react-native-iphone-x-helper';
+import { getStorageItem } from '../../utils/storage';
+import { COLLECTION_TICKETS } from '../../constants';
+
+type TicketType = {
+  id: string;
+  title: string;
+  dueDate: Date;
+  value: number;
+  barcode: string;
+  createdAt: Date;
+  isPay: boolean;
+  hasNotification: boolean;
+};
 
 export function Extracts() {
-  const { tickets, loadTickets } = useTicket();
-
   const [extracts, setExtracts] = useState<TicketType[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+
+  const isFocused = useIsFocused();
+
+  async function loadTickets() {
+    const storage = await getStorageItem(COLLECTION_TICKETS);
+
+    const ticketsStored: TicketType[] = JSON.parse(storage || '[]');
+
+    const filterTickets = ticketsStored?.filter(
+      (ticket) => ticket.isPay === true
+    );
+
+    setExtracts(filterTickets);
+  }
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
@@ -25,15 +50,11 @@ export function Extracts() {
     }, 2000);
   }, []);
 
-  useFocusEffect(
-    useCallback(() => {
+  useEffect(() => {
+    if (isFocused) {
       loadTickets();
-
-      if (tickets) {
-        setExtracts(tickets.filter((ticket) => ticket.isPay === true));
-      }
-    }, [tickets])
-  );
+    }
+  }, [isFocused]);
 
   return (
     <Container>
@@ -49,19 +70,13 @@ export function Extracts() {
 
         <FlatList
           data={extracts}
-          style={{ marginTop: 32 }}
+          style={{ marginTop: 32, marginBottom: getBottomSpace() + 95 }}
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: 120 }}
+          contentContainerStyle={{ paddingBottom: 48 }}
           keyExtractor={(item) => item.id}
           ItemSeparatorComponent={() => <TicketSeparator />}
           renderItem={({ item }) => (
-            <Ticket
-              disabled={true}
-              key={item.id}
-              title={item.title}
-              price={item.value}
-              dueDate={item.dueDate}
-            />
+            <Ticket disabled key={item.id} data={item} />
           )}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />

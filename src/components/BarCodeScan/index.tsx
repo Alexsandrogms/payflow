@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -8,12 +8,7 @@ import {
   requestPermissionsAsync,
 } from 'expo-barcode-scanner';
 
-import { 
-  TouchableOpacity, 
-  Modal, 
-  Alert, 
-  StyleSheet 
-} from 'react-native';
+import { TouchableOpacity, Modal, Alert, StyleSheet } from 'react-native';
 
 import {
   Button,
@@ -27,6 +22,7 @@ import {
   WarningFooter,
   WarningText,
 } from './styles';
+import { useFocusEffect } from '@react-navigation/native';
 
 type BarCodeScanProps = BarCodeScannerProps & {
   open: boolean;
@@ -42,7 +38,7 @@ export function BarCodeScan({
   const [isScannerTimeExpired, setIsScannerTimeExpired] = useState(true);
   const [hasPermission, setHasPermission] = useState<unknown>(null);
 
-  const scannerTimeExpiredDefault = 10000;
+  const scannerTimeExpiredDefault = 15000;
   let timeout: number | undefined;
 
   async function handleCloseScan() {
@@ -55,31 +51,38 @@ export function BarCodeScan({
     setIsScannerTimeExpired(false);
   }
 
-  useEffect(() => {
-    (async () => {
-      if (open) {
-        const { status } = await requestPermissionsAsync();
-        await ScreenOrientation.lockAsync(
-          ScreenOrientation.OrientationLock.LANDSCAPE
-        );
+  async function getPermissions() {
+    const { status } = await requestPermissionsAsync();
 
-        setHasPermission(status === 'granted');
-      } else {
+    setHasPermission(status === 'granted');
+  }
+
+  useFocusEffect(
+    useCallback(() => {
+      getPermissions().then(async () => {
+        if (open) {
+          await ScreenOrientation.lockAsync(
+            ScreenOrientation.OrientationLock.LANDSCAPE
+          );
+
+          return;
+        }
+
         setIsScannerTimeExpired(false);
         await ScreenOrientation.lockAsync(
           ScreenOrientation.OrientationLock.PORTRAIT
         );
-      }
-    })();
-  }, [open]);
+      });
+    }, [open])
+  );
 
   useEffect(() => {
-    if (open) {
+    if (open && !isScannerTimeExpired) {
       timeout = setTimeout(() => {
         setIsScannerTimeExpired(true);
       }, scannerTimeExpiredDefault);
     }
-  }, [open]);
+  }, [isScannerTimeExpired, open]);
 
   if (hasPermission === false) {
     Alert.alert('', 'Nenhum acesso à câmera');

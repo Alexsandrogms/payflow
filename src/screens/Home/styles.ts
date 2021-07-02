@@ -1,4 +1,6 @@
 import styled from 'styled-components/native';
+import { BorderlessButton } from 'react-native-gesture-handler';
+
 import { theme } from '../../global/styles/theme';
 
 export const Container = styled.View`
@@ -15,4 +17,13 @@ export const Content = styled.View`
 
 export const TicketSeparator = styled.View`
   height: 40px;
+`;
+
+export const Filter = styled.View`
+  padding: 16px 0px;
+  align-items: flex-end;
+`;
+
+export const ButtonFilter = styled(BorderlessButton)`
+  z-index: 2;
 `;

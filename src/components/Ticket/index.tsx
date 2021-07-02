@@ -3,24 +3,28 @@ import { TouchableOpacity, TouchableOpacityProps } from 'react-native';
 
 import { formatCurrency } from '../../utils/formatCurrency';
 import { formatDate } from '../../utils/formatDate';
+import { TicketType } from '../../hooks/useTicket';
 
 import { Container, Content, Title, PriceText, DueDateText } from './styles';
 
 type TicketProps = TouchableOpacityProps & {
-  title: string;
-  price: number;
-  dueDate: Date;
+  data: TicketType;
+  isDateExpired?: boolean;
 };
 
-export function Ticket({ title, price, dueDate, ...rest }: TicketProps) {
+export function Ticket({ data, isDateExpired, ...rest }: TicketProps) {
+  const { title, value, dueDate } = data;
+
   return (
     <TouchableOpacity {...rest}>
       <Container>
         <Content>
           <Title numberOfLines={1}>{title}</Title>
-          <PriceText>{formatCurrency(price, 'R$')}</PriceText>
+          <PriceText>{formatCurrency(value, 'R$')}</PriceText>
         </Content>
-        <DueDateText>Vence em {formatDate(dueDate)}</DueDateText>
+        <DueDateText expired={isDateExpired}>
+          Vence em {formatDate(dueDate)}
+        </DueDateText>
       </Container>
     </TouchableOpacity>
   );

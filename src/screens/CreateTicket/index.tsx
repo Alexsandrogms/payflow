@@ -20,7 +20,6 @@ import { DatePicker } from '../../components/DatePicker';
 import { BarCodeScan } from '../../components/BarCodeScan';
 import { formatDate } from '../../utils/formatDate';
 import { removeCurrencyMask } from '../../utils/formatCurrency';
-import { TicketType, useTicket } from '../../hooks/useTicket';
 
 import {
   Button,
@@ -32,13 +31,24 @@ import {
   Title,
 } from './styles';
 import { Load } from '../../components/Load';
+import { COLLECTION_TICKETS } from '../../constants';
+import { getStorageItem, setStorageItem } from '../../utils/storage';
+
+type TicketType = {
+  id: string;
+  title: string;
+  dueDate: Date;
+  value: number;
+  barcode: string;
+  createdAt: Date;
+  isPay: boolean;
+  hasNotification: boolean;
+};
 
 type EventChangeDate = SyntheticEvent<Readonly<{ timestamp: number }>, Event>;
 
 export function CreateTicket() {
   const navigation = useNavigation();
-
-  const { handleAddNewTicket } = useTicket();
 
   const [dueDate, setDueDate] = useState(new Date());
   const [name, setName] = useState('');
@@ -140,6 +150,7 @@ export function CreateTicket() {
       barcode,
       createdAt: new Date(),
       isPay: false,
+      hasNotification: false,
     };
 
     if (onValidateForm(ticket)) {
@@ -152,7 +163,14 @@ export function CreateTicket() {
     setLoading(true);
 
     try {
-      await handleAddNewTicket(ticket);
+      const storedTickets = await getStorageItem(COLLECTION_TICKETS);
+
+      const ticketsStored = JSON.parse(storedTickets || '[]');
+
+      await setStorageItem({
+        key: COLLECTION_TICKETS,
+        value: [ticket, ...ticketsStored],
+      });
 
       resetForm();
       navigation.navigate('Home');
@@ -201,7 +219,7 @@ export function CreateTicket() {
                 returnKeyType="next"
                 ref={inputDueDateRef}
                 blurOnSubmit={false}
-                value={formatDate(dueDate)}
+                value={formatDate(dueDate, 'P')}
                 onResponderStart={handleOpenDatePicker}
                 onSubmitEditing={() => handleFocusNextInput('currency')}
               />
@@ -221,19 +239,22 @@ export function CreateTicket() {
                 ref={inputValueRef}
                 value={currency}
                 blurOnSubmit={false}
-                onSubmitEditing={() => handleFocusNextInput('barcode')}
                 onChange={handleChangeCurrencyValue}
+                onSubmitEditing={() => handleFocusNextInput('barcode')}
               />
             </InputBlock>
             <InputBlock>
               <Input
                 icon="barcode-outline"
                 placeholder="Código"
+                keyboardType="numeric"
+                returnKeyType="send"
                 type="scan"
                 ref={inputBarCodeRef}
                 value={barcode}
                 onChangeText={(text) => setBarcode(text)}
                 handlePressButtonScan={() => setIsOpenScan(true)}
+                onSubmitEditing={handleCreateTicket}
               />
 
               <BarCodeScan

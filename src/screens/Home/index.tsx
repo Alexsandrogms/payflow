@@ -1,5 +1,8 @@
-import React, { useCallback, useState } from 'react';
-import { useFocusEffect } from '@react-navigation/native';
+import React, { useCallback, useState, useEffect } from 'react';
+import { isBefore } from 'date-fns';
+import { Ionicons } from '@expo/vector-icons';
+import { useIsFocused } from '@react-navigation/native';
+import { getBottomSpace } from 'react-native-iphone-x-helper';
 import { FlatList, RefreshControl } from 'react-native';
 
 import { Header } from '../../components/Header';
@@ -8,19 +11,32 @@ import { Divider } from '../../components/Divider';
 import { ListHeader } from '../../components/ListHeader';
 import { Ticket } from '../../components/Ticket';
 import { ModalView } from '../../components/ModalView';
-import { TicketType, useTicket } from '../../hooks/useTicket';
 
 import { Container, Content, TicketSeparator } from './styles';
+import { getStorageItem, setStorageItem } from '../../utils/storage';
+import { COLLECTION_TICKETS } from '../../constants';
+
+type TicketType = {
+  id: string;
+  title: string;
+  dueDate: Date;
+  value: number;
+  barcode: string;
+  createdAt: Date;
+  isPay: boolean;
+  hasNotification: boolean;
+};
 
 export function Home() {
-  const { tickets, loadTickets } = useTicket();
-
-  const [openModalAction, setOpenModalAction] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
+  const [tickets, setTickets] = useState<TicketType[]>([]);
   const [ticketSelected, setTicketSelected] = useState<TicketType>(
     {} as TicketType
   );
-  const [myTickets, setMyTickets] = useState<TicketType[]>([]);
+
+  const [openModalAction, setOpenModalAction] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const isFocused = useIsFocused();
 
   function handleSelectTicket(ticket: TicketType) {
     setTicketSelected(ticket);
@@ -32,42 +48,90 @@ export function Home() {
     setOpenModalAction(false);
   }
 
+  function checkIsDueDateExpired(ticket: TicketType) {
+    return isBefore(new Date(ticket.dueDate), new Date());
+  }
+
+  async function loadTickets() {
+    const storage = await getStorageItem(COLLECTION_TICKETS);
+
+    const ticketsStored: TicketType[] = JSON.parse(storage || '[]');
+
+    const filterTickets = ticketsStored?.filter(
+      (ticket) => ticket.isPay === false
+    );
+
+    setTickets(filterTickets);
+  }
+
+  async function handleMarkTicketAsPaid(ticketId: string) {
+    const stored = await getStorageItem(COLLECTION_TICKETS);
+
+    const ticketsStored: TicketType[] = JSON.parse(stored ?? '') || [];
+
+    ticketsStored.forEach((ticket) => {
+      if (ticket.id === ticketId) {
+        ticket.isPay = true;
+      }
+
+      return ticket;
+    });
+
+    await setStorageItem({
+      key: COLLECTION_TICKETS,
+      value: ticketsStored,
+    });
+
+    await loadTickets();
+  }
+
+  async function handleRemoveTicket(ticketId: string) {
+    const stored = await getStorageItem(COLLECTION_TICKETS);
+
+    const ticketsStored: TicketType[] = JSON.parse(stored ?? '') || [];
+
+    const newTickets = ticketsStored.filter((ticket) => ticket.id !== ticketId);
+
+    await setStorageItem({
+      key: COLLECTION_TICKETS,
+      value: newTickets,
+    });
+
+    await loadTickets();
+  }
+
   const onRefresh = useCallback(() => {
     setRefreshing(true);
 
-    setTimeout(() => {
-      loadTickets();
+    setTimeout(async () => {
+      await loadTickets();
       setRefreshing(false);
     }, 2000);
   }, []);
 
-  useFocusEffect(
-    useCallback(() => {
+  useEffect(() => {
+    if (isFocused) {
       loadTickets();
-
-      if (tickets) {
-        setMyTickets(tickets.filter((ticket) => ticket.isPay === false));
-      }
-    }, [tickets])
-  );
+    }
+  }, [isFocused]);
 
   return (
     <Container>
       <Header />
 
       <Content>
-        <TicketCounter amount={myTickets.length} />
+        <TicketCounter amount={tickets.length} />
 
         <ListHeader
           title="Meus boletos"
-          subtitle={`${myTickets.length} ao total`}
+          subtitle={`${tickets.length} ao total`}
         />
 
         <Divider />
 
         <FlatList
-          data={myTickets}
-          style={{ marginTop: 32 }}
+          data={tickets}
+          style={{ marginTop: 32, marginBottom: getBottomSpace() + 95 }}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 120 }}
           keyExtractor={(item) => item.id}
@@ -75,9 +139,8 @@ export function Home() {
           renderItem={({ item }) => (
             <Ticket
               key={item.id}
-              title={item.title}
-              price={item.value}
-              dueDate={item.dueDate}
+              data={item}
+              isDateExpired={checkIsDueDateExpired(item)}
               onPress={() => handleSelectTicket(item)}
             />
           )}
@@ -90,6 +153,8 @@ export function Home() {
         visible={openModalAction}
         ticketSelected={ticketSelected}
         closeModal={handleCloseModal}
+        handleMarkTicketAsPaid={handleMarkTicketAsPaid}
+        handleRemoveTicket={handleRemoveTicket}
       />
     </Container>
   );

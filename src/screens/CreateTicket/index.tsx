@@ -1,4 +1,5 @@
 import React, { SyntheticEvent, useRef, useState, useCallback } from 'react';
+import * as ScreenOrientation from 'expo-screen-orientation';
 import Clipboard from 'expo-clipboard';
 import { nanoid } from 'nanoid';
 import { Ionicons } from '@expo/vector-icons';
@@ -18,8 +19,12 @@ import {
 import { Input } from '../../components/Input';
 import { DatePicker } from '../../components/DatePicker';
 import { BarCodeScan } from '../../components/BarCodeScan';
+import { Load } from '../../components/Load';
 import { formatDate } from '../../utils/formatDate';
 import { removeCurrencyMask } from '../../utils/formatCurrency';
+import { getStorageItem, setStorageItem } from '../../utils/storage';
+import { COLLECTION_TICKETS } from '../../constants';
+import { TicketType } from '../../global/types/ticket';
 
 import {
   Button,
@@ -30,20 +35,6 @@ import {
   InputBlock,
   Title,
 } from './styles';
-import { Load } from '../../components/Load';
-import { COLLECTION_TICKETS } from '../../constants';
-import { getStorageItem, setStorageItem } from '../../utils/storage';
-
-type TicketType = {
-  id: string;
-  title: string;
-  dueDate: Date;
-  value: number;
-  barcode: string;
-  createdAt: Date;
-  isPay: boolean;
-  hasNotification: boolean;
-};
 
 type EventChangeDate = SyntheticEvent<Readonly<{ timestamp: number }>, Event>;
 
@@ -105,6 +96,10 @@ export function CreateTicket() {
 
   async function handleBarCodeScanned({ data }: BarCodeEvent) {
     if (data) {
+      await ScreenOrientation.lockAsync(
+        ScreenOrientation.OrientationLock.PORTRAIT
+      );
+
       setBarcode(data);
       setIsOpenScan(false);
     }
@@ -139,6 +134,14 @@ export function CreateTicket() {
 
   function onValidateForm(values: TicketType) {
     return Object.entries(values).find(([_key, value]) => value === '')?.[0];
+  }
+
+  async function handleOpenCamScanBarcode() {
+    await ScreenOrientation.lockAsync(
+      ScreenOrientation.OrientationLock.LANDSCAPE
+    );
+
+    setIsOpenScan(true);
   }
 
   async function handleCreateTicket() {
@@ -253,7 +256,7 @@ export function CreateTicket() {
                 ref={inputBarCodeRef}
                 value={barcode}
                 onChangeText={(text) => setBarcode(text)}
-                handlePressButtonScan={() => setIsOpenScan(true)}
+                handlePressButtonScan={handleOpenCamScanBarcode}
                 onSubmitEditing={handleCreateTicket}
               />
 

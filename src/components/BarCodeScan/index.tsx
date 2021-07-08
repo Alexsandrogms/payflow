@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -8,7 +8,7 @@ import {
   requestPermissionsAsync,
 } from 'expo-barcode-scanner';
 
-import { TouchableOpacity, Modal, Alert, StyleSheet } from 'react-native';
+import { TouchableOpacity, Modal, Alert, StyleSheet, View } from 'react-native';
 
 import {
   Button,
@@ -22,7 +22,6 @@ import {
   WarningFooter,
   WarningText,
 } from './styles';
-import { useFocusEffect } from '@react-navigation/native';
 
 type BarCodeScanProps = BarCodeScannerProps & {
   open: boolean;
@@ -42,6 +41,10 @@ export function BarCodeScan({
   let timeout: number | undefined;
 
   async function handleCloseScan() {
+    await ScreenOrientation.lockAsync(
+      ScreenOrientation.OrientationLock.PORTRAIT
+    );
+
     setIsScannerTimeExpired(false);
     onClose();
   }
@@ -57,24 +60,9 @@ export function BarCodeScan({
     setHasPermission(status === 'granted');
   }
 
-  useFocusEffect(
-    useCallback(() => {
-      getPermissions().then(async () => {
-        if (open) {
-          await ScreenOrientation.lockAsync(
-            ScreenOrientation.OrientationLock.LANDSCAPE
-          );
-
-          return;
-        }
-
-        setIsScannerTimeExpired(false);
-        await ScreenOrientation.lockAsync(
-          ScreenOrientation.OrientationLock.PORTRAIT
-        );
-      });
-    }, [open])
-  );
+  useEffect(() => {
+    getPermissions();
+  }, []);
 
   useEffect(() => {
     if (open && !isScannerTimeExpired) {
@@ -86,7 +74,7 @@ export function BarCodeScan({
 
   if (hasPermission === false) {
     Alert.alert('', 'Nenhum acesso à câmera');
-    return <></>;
+    return <View />;
   }
 
   return (

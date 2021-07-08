@@ -3,7 +3,7 @@ import { TouchableOpacity, TouchableOpacityProps } from 'react-native';
 
 import { formatCurrency } from '../../utils/formatCurrency';
 import { formatDate } from '../../utils/formatDate';
-import { TicketType } from '../../hooks/useTicket';
+import { TicketType } from '../../global/types/ticket';
 
 import { Container, Content, Title, PriceText, DueDateText } from './styles';
 

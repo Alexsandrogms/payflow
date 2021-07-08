@@ -4,7 +4,6 @@ import { Modal, ModalProps, TouchableWithoutFeedback } from 'react-native';
 
 import { theme } from '../../global/styles/theme';
 import { formatCurrency } from '../../utils/formatCurrency';
-import { useTicket } from '../../hooks/useTicket';
 
 import {
   Button,
@@ -27,16 +26,18 @@ type ModalViewProps = ModalProps & {
     title: string;
     value: number;
   };
+  handleMarkTicketAsPaid: (ticketSelectedId: string) => Promise<void>;
+  handleRemoveTicket: (ticketSelectedId: string) => Promise<void>;
   closeModal: () => void;
 };
 
 export function ModalView({
   ticketSelected,
   closeModal,
+  handleMarkTicketAsPaid,
+  handleRemoveTicket,
   ...rest
 }: ModalViewProps) {
-  const { handleMarkTicketAsPaid, handleRemoveTicket } = useTicket();
-
   async function handleTicketAsPaid() {
     await handleMarkTicketAsPaid(ticketSelected.id);
     closeModal();

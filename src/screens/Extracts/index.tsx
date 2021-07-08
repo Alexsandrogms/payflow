@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { getBottomSpace } from 'react-native-iphone-x-helper';
 import { useIsFocused } from '@react-navigation/native';
 import { FlatList, RefreshControl } from 'react-native';
 
@@ -6,22 +7,11 @@ import { Header } from '../../components/Header';
 import { Divider } from '../../components/Divider';
 import { ListHeader } from '../../components/ListHeader';
 import { Ticket } from '../../components/Ticket';
-
-import { Container, Content, TicketSeparator } from './styles';
-import { getBottomSpace } from 'react-native-iphone-x-helper';
 import { getStorageItem } from '../../utils/storage';
 import { COLLECTION_TICKETS } from '../../constants';
+import { TicketType } from '../../global/types/ticket';
 
-type TicketType = {
-  id: string;
-  title: string;
-  dueDate: Date;
-  value: number;
-  barcode: string;
-  createdAt: Date;
-  isPay: boolean;
-  hasNotification: boolean;
-};
+import { Container, Content, TicketSeparator } from './styles';
 
 export function Extracts() {
   const [extracts, setExtracts] = useState<TicketType[]>([]);
